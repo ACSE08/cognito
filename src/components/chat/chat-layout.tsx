@@ -29,10 +29,12 @@ import {
   Settings,
   LogOut,
   ChevronDown,
+  PlusCircle,
 } from "lucide-react";
 import React from "react";
 import ChatPanel from "./chat-panel";
 import Link from "next/link";
+import { Button } from "../ui/button";
 
 // Mock data, to be replaced with real data from a use-chat-history hook
 const MOCK_HISTORY = [
@@ -49,7 +51,7 @@ export default function ChatLayout() {
 
   return (
     <SidebarProvider>
-      <Sidebar>
+      <Sidebar collapsible="icon">
         <SidebarHeader>
           <div className="flex items-center justify-between">
             <Logo className="group-data-[collapsible=icon]:hidden" />
@@ -57,20 +59,14 @@ export default function ChatLayout() {
           </div>
         </SidebarHeader>
         <SidebarContent>
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                onClick={() => setActiveChatId("new")}
-                isActive={activeChatId === "new"}
-                tooltip="New Chat"
-              >
-                <MessageSquare />
-                <span>New Chat</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
+            <div className="p-2">
+                <Button className="w-full justify-start" size="lg" onClick={() => setActiveChatId("new")}>
+                    <PlusCircle />
+                    <span className="group-data-[collapsible=icon]:hidden">New Chat</span>
+                </Button>
+            </div>
           <SidebarSeparator />
-          <div className="px-4 py-2 text-sm font-medium text-muted-foreground group-data-[collapsible=icon]:hidden">
+          <div className="px-4 py-2 text-sm font-medium text-sidebar-foreground/70 group-data-[collapsible=icon]:hidden">
             <div className="flex items-center gap-2">
               <History className="h-4 w-4" />
               <span>Recent Chats</span>

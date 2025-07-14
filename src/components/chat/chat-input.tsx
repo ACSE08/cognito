@@ -85,7 +85,7 @@ export default function ChatInput() {
                         if (videoRef.current) {
                             const canvas = document.createElement('canvas');
                             canvas.width = videoRef.current.videoWidth;
-                            canvas.height = video-ref.current.videoHeight;
+                            canvas.height = videoRef.current.videoHeight;
                             canvas.getContext('2d')?.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
                             const imageData = canvas.toDataURL('image/jpeg');
                             const intervention = await detectDisengagement(imageData);
@@ -115,7 +115,7 @@ export default function ChatInput() {
             <div className="relative">
                 <Textarea
                     placeholder="Ask a question about your studies..."
-                    className="pr-32 min-h-[52px]"
+                    className="pr-36 min-h-[52px] resize-none"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={(e) => {
@@ -146,7 +146,7 @@ export default function ChatInput() {
                             <p>Query with image</p>
                         </TooltipContent>
                     </Tooltip>
-                    <Button size="icon" className="h-9 w-9 bg-accent hover:bg-accent/90" onClick={handleSend} disabled={!input.trim()}>
+                    <Button size="icon" className="h-9 w-9" onClick={handleSend} disabled={!input.trim()}>
                         <Send className="h-5 w-5" />
                     </Button>
                 </div>
@@ -154,9 +154,9 @@ export default function ChatInput() {
             <div className="mt-2 flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                     <Switch id="engagement-detection" checked={isDetectingEngagement} onCheckedChange={handleEngagementDetection} />
-                    <Label htmlFor="engagement-detection" className="text-sm text-muted-foreground flex items-center gap-1">
-                        {isDetectingEngagement ? <Video className="h-4 w-4 text-green-500" /> : <VideoOff className="h-4 w-4" />}
-                        Real-time Engagement Detection
+                    <Label htmlFor="engagement-detection" className="text-sm text-muted-foreground flex items-center gap-1.5 cursor-pointer">
+                        {isDetectingEngagement ? <Video className="h-4 w-4 text-primary" /> : <VideoOff className="h-4 w-4" />}
+                        Real-time Engagement
                     </Label>
                 </div>
                 <p className="text-xs text-muted-foreground">Press Shift+Enter for a new line.</p>

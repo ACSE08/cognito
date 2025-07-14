@@ -82,11 +82,11 @@ export default function ChatMessages({ chatId }: { chatId: string | null }) {
             {message.type !== 'ai' || message.content ? <ChatMessage message={message} /> : null}
 
             {message.type === 'ai' && message.chartData && (
-                <Card className="max-w-xl ml-12 my-2 shadow-md">
+                <Card className="max-w-xl ml-14 my-2 shadow-sm">
                     <CardContent className="p-4">
-                        <h3 className="font-bold font-headline mb-4 text-lg flex items-center gap-2"><BarChart className="text-accent" /> {message.chartData.title}</h3>
+                        <h3 className="font-bold font-headline mb-4 text-lg flex items-center gap-2"><BarChart className="text-primary" /> {message.chartData.title}</h3>
                         <div className="h-64">
-                            <ChartContainer config={{value: {label: 'Importance', color: 'hsl(var(--accent))'}}}>
+                            <ChartContainer config={{value: {label: 'Importance', color: 'hsl(var(--primary))'}}}>
                                 <ResponsiveContainer width="100%" height="100%">
                                     <RechartsBarChart data={message.chartData.data} margin={{ top: 20, right: 20, bottom: 5, left: 0 }}>
                                         <CartesianGrid vertical={false} />
@@ -103,13 +103,13 @@ export default function ChatMessages({ chatId }: { chatId: string | null }) {
             )}
             
             {message.type === 'ai' && message.visualAidUrl && (
-                <div className="max-w-xl ml-12 my-2">
+                <div className="max-w-xl ml-14 my-2">
                     <Image src={message.visualAidUrl} alt="Visual Aid" width={600} height={400} className="rounded-lg shadow-md" data-ai-hint="education diagram"/>
                 </div>
             )}
             
             {message.type === 'ai' && message.quizResult && (
-                <div className="max-w-xl ml-12 my-2">
+                <div className="max-w-xl ml-14 my-2">
                     <QuizResultCard result={message.quizResult} />
                 </div>
             )}

@@ -75,7 +75,7 @@ export function LoginForm() {
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
+        <Button type="submit" className="w-full">
           Sign In
         </Button>
         <div className="relative">
