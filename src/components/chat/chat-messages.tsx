@@ -38,7 +38,7 @@ export default function ChatMessages({ chatId, messages, isLoading }: ChatMessag
       return (
         <div className="flex h-full flex-col items-center justify-center text-center">
             <Logo />
-            <p className="mt-4 text-lg text-muted-foreground">Start a new conversation with EduAI!</p>
+            <p className="mt-4 text-lg text-muted-foreground">Start a new conversation with Cognita!</p>
             <p className="text-sm text-muted-foreground">Ask anything about your studies.</p>
         </div>
       )
