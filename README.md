@@ -1,5 +1,12 @@
-# Firebase Studio
+Follow the given instruction :  
+kindly create the ".env" that should contain gemini API key in the format given below:
 
-This is a NextJS starter in Firebase Studio.
+GEMINI_API_KEY=YOUR_KEY_HERE
 
-To get started, take a look at src/app/page.tsx.
+STEPS TO RUN PROGRAM :
+
+INSTALL NODEJS
+OPEN CAMMAND PROMPT AND TRVERSE TO SOURCE CODE FOLDER
+RUN " npm install "
+RUN " npm run dev "
+OPEN LOCAL HOST
