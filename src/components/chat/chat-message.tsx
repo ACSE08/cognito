@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
-import { User, Bot } from "lucide-react";
+import { User, Bot, Loader2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
 export interface Message {
@@ -14,11 +14,25 @@ export interface Message {
 
 export function ChatMessage({ message }: { message: Message }) {
     const isUser = message.type === 'user';
+
+    if (message.id === 'loading') {
+        return (
+            <div className={cn("flex items-start gap-4")}>
+                <Avatar className="h-9 w-9 border-2 border-primary bg-background">
+                    <AvatarFallback className="bg-gradient-to-br from-primary/20 to-violet-600/20 text-primary"><Bot size={20} /></AvatarFallback>
+                </Avatar>
+                <div className={cn("max-w-xl rounded-lg px-4 py-3 shadow-sm flex items-center", "bg-card")}>
+                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                </div>
+            </div>
+        )
+    }
+
     return (
         <div className={cn("flex items-start gap-4", isUser && "justify-end")}>
             {!isUser && (
-                <Avatar className="h-9 w-9 border-2 border-primary">
-                    <AvatarFallback className="bg-primary text-primary-foreground"><Bot size={20} /></AvatarFallback>
+                <Avatar className="h-9 w-9 border-2 border-primary bg-background">
+                     <AvatarFallback className="bg-gradient-to-br from-primary/20 to-violet-600/20 text-primary"><Bot size={20} /></AvatarFallback>
                 </Avatar>
             )}
             {message.content && (

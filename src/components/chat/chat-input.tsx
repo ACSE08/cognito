@@ -2,25 +2,24 @@
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Mic, Image as ImageIcon, Video, VideoOff } from "lucide-react";
-import React, { useRef, useState } from "react";
+import { Send, Mic, Image as ImageIcon, Video, VideoOff, Loader2 } from "lucide-react";
+import React, { useRef, useState, useEffect } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import { Switch } from "../ui/switch";
 import { Label } from "../ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import type { Message } from "./chat-message";
+import { processMultimodalQuery } from "@/ai/flows/process-multimodal-query";
+import { detectStudentDisengagement } from "@/ai/flows/detect-student-disengagement";
 
-// Placeholder for engagement detection call
-async function detectDisengagement(imageData: string): Promise<string | null> {
-    // In a real app, this would call the GenAI flow `detectStudentDisengagement`
-    console.log("Detecting disengagement with image data...");
-    if (Math.random() > 0.8) { // Simulate disengagement detection
-        return "You seem a bit bored. How about we try a quick quiz on this topic?";
-    }
-    return null;
+interface ChatInputProps {
+  onNewMessage: (message: Message) => void;
+  setLoading: (loading: boolean) => void;
+  isLoading: boolean;
 }
 
-export default function ChatInput() {
+export default function ChatInput({ onNewMessage, setLoading, isLoading }: ChatInputProps) {
     const [input, setInput] = useState("");
     const [isRecording, setIsRecording] = useState(false);
     const [isDetectingEngagement, setIsDetectingEngagement] = useState(false);
@@ -28,12 +27,31 @@ export default function ChatInput() {
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const engagementIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const { toast } = useToast();
+    const [hasCameraPermission, setHasCameraPermission] = useState(false);
 
-    const handleSend = () => {
+
+    const handleSend = async () => {
         if (input.trim()) {
-            console.log("Sending text:", input);
-            // TODO: Add message to chat history and call AI
+            const userMessage: Message = { id: crypto.randomUUID(), type: 'user', content: input };
+            onNewMessage(userMessage);
             setInput("");
+            setLoading(true);
+
+            try {
+                const result = await processMultimodalQuery({ textQuery: input });
+                const aiMessage: Message = {
+                    id: crypto.randomUUID(),
+                    type: 'ai',
+                    content: result.response,
+                    chartData: result.includesChart ? { title: "Data Visualization", data: [{ name: 'A', value: 400 }, { name: 'B', value: 300 }] } : undefined,
+                };
+                onNewMessage(aiMessage);
+            } catch (error) {
+                console.error("Error processing query:", error);
+                toast({ variant: "destructive", title: "AI Error", description: "Failed to get a response from the AI." });
+            } finally {
+                setLoading(false);
+            }
         }
     };
 
@@ -56,10 +74,26 @@ export default function ChatInput() {
                     const audioBlob = new Blob(audioChunks);
                     const reader = new FileReader();
                     reader.readAsDataURL(audioBlob);
-                    reader.onloadend = () => {
-                        const base64data = reader.result;
+                    reader.onloadend = async () => {
+                        const base64data = reader.result as string;
                         console.log("Sending voice data URI");
-                        // TODO: call AI with voice data `processMultimodalQuery({ voiceDataUri: base64data })`
+                        onNewMessage({ id: crypto.randomUUID(), type: 'user', content: '[Voice message]' });
+                        setLoading(true);
+                        try {
+                            const result = await processMultimodalQuery({ voiceDataUri: base64data });
+                             const aiMessage: Message = {
+                                id: crypto.randomUUID(),
+                                type: 'ai',
+                                content: result.response,
+                                chartData: result.includesChart ? { title: "Data Visualization", data: [{ name: 'A', value: 400 }, { name: 'B', value: 300 }] } : undefined,
+                            };
+                            onNewMessage(aiMessage);
+                        } catch (error) {
+                             console.error("Error processing query:", error);
+                            toast({ variant: "destructive", title: "AI Error", description: "Failed to get a response from the AI." });
+                        } finally {
+                            setLoading(false);
+                        }
                     };
                     stream.getTracks().forEach(track => track.stop());
                 });
@@ -72,9 +106,50 @@ export default function ChatInput() {
         }
     };
     
+    useEffect(() => {
+        const getCameraPermission = async () => {
+          try {
+            const stream = await navigator.mediaDevices.getUserMedia({video: true});
+            setHasCameraPermission(true);
+    
+            if (videoRef.current) {
+              videoRef.current.srcObject = stream;
+            }
+            // Stop the tracks immediately after getting permission if not actively detecting
+            if (!isDetectingEngagement) {
+                 stream.getTracks().forEach(track => track.stop());
+            }
+          } catch (error) {
+            console.error('Error accessing camera:', error);
+            setHasCameraPermission(false);
+          }
+        };
+    
+        getCameraPermission();
+
+        return () => {
+             if (engagementIntervalRef.current) {
+                clearInterval(engagementIntervalRef.current);
+            }
+            const stream = videoRef.current?.srcObject as MediaStream | null;
+            stream?.getTracks().forEach(track => track.stop());
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+
     const handleEngagementDetection = (checked: boolean) => {
         setIsDetectingEngagement(checked);
         if (checked) {
+            if (!hasCameraPermission) {
+                toast({
+                    variant: 'destructive',
+                    title: 'Camera Access Denied',
+                    description: 'Please enable camera permissions in your browser settings to use this feature.',
+                });
+                setIsDetectingEngagement(false);
+                return;
+            }
             navigator.mediaDevices.getUserMedia({ video: true })
                 .then(stream => {
                     if (videoRef.current) {
@@ -82,15 +157,20 @@ export default function ChatInput() {
                         videoRef.current.play();
                     }
                     engagementIntervalRef.current = setInterval(async () => {
-                        if (videoRef.current) {
+                        if (videoRef.current && videoRef.current.readyState >= 2) {
                             const canvas = document.createElement('canvas');
                             canvas.width = videoRef.current.videoWidth;
                             canvas.height = videoRef.current.videoHeight;
                             canvas.getContext('2d')?.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-                            const imageData = canvas.toDataURL('image/jpeg');
-                            const intervention = await detectDisengagement(imageData);
-                            if (intervention) {
-                                toast({ title: "Engagement Check", description: intervention });
+                            const faceDataUri = canvas.toDataURL('image/jpeg');
+                            
+                            try {
+                                const result = await detectStudentDisengagement({ faceDataUri, learningModule: "Current Topic" });
+                                if (result.isDisengaged && result.boredomLevel > 60) {
+                                    toast({ title: "Engagement Check", description: result.suggestedIntervention });
+                                }
+                            } catch(e) {
+                                console.error("Error detecting disengagement", e);
                             }
                         }
                     }, 15000); // Check every 15 seconds
@@ -124,11 +204,12 @@ export default function ChatInput() {
                             handleSend();
                         }
                     }}
+                    disabled={isLoading}
                 />
                 <div className="absolute top-1/2 right-3 transform -translate-y-1/2 flex gap-1">
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <Button size="icon" variant="ghost" className="h-9 w-9" onClick={handleVoiceRecording}>
+                            <Button size="icon" variant="ghost" className="h-9 w-9" onClick={handleVoiceRecording} disabled={isLoading}>
                                 <Mic className={cn("h-5 w-5", isRecording && "text-red-500 animate-pulse")} />
                             </Button>
                         </TooltipTrigger>
@@ -138,7 +219,7 @@ export default function ChatInput() {
                     </Tooltip>
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <Button size="icon" variant="ghost" className="h-9 w-9">
+                            <Button size="icon" variant="ghost" className="h-9 w-9" disabled={isLoading}>
                                 <ImageIcon className="h-5 w-5" />
                             </Button>
                         </TooltipTrigger>
@@ -146,8 +227,8 @@ export default function ChatInput() {
                             <p>Query with image</p>
                         </TooltipContent>
                     </Tooltip>
-                    <Button size="icon" className="h-9 w-9" onClick={handleSend} disabled={!input.trim()}>
-                        <Send className="h-5 w-5" />
+                    <Button size="icon" className="h-9 w-9 bg-gradient-to-br from-primary to-violet-600 hover:from-primary/90 hover:to-violet-600/90" onClick={handleSend} disabled={!input.trim() || isLoading}>
+                        {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
                     </Button>
                 </div>
             </div>
@@ -160,7 +241,7 @@ export default function ChatInput() {
                     </Label>
                 </div>
                 <p className="text-xs text-muted-foreground">Press Shift+Enter for a new line.</p>
-                <video ref={videoRef} className="absolute -z-10 h-px w-px opacity-0" playsInline />
+                <video ref={videoRef} className={cn("absolute -z-10 h-px w-px opacity-0", isDetectingEngagement && "right-0 bottom-full mb-2 h-24 w-auto rounded-md border" )} playsInline muted />
             </div>
         </TooltipProvider>
     );
